@@ -77,6 +77,38 @@ p_box = ggplot(data_all_boxplot,
 
 p_box
 
+# Wilcoxon tests results 
+data_all_boxplot = data %>% 
+  dplyr::select(!proportion_RS_genomes) %>% 
+  gather(key = 'item',value = 'value',-c(Uncultivated)) 
+
+pvals = data_all_boxplot %>% 
+  filter(!is.na(value)) %>% 
+  group_by(item) %>%
+  reframe(
+    p_value = wilcox.test(value ~ Uncultivated)$p.value,
+  ) %>%
+  print(n = 100)
+
+
+mean_cult = data_all_boxplot %>% 
+  filter(Uncultivated != "Uncultivated") %>% 
+  group_by(item) %>%
+  summarise(mean_cult = mean(value)) 
+
+
+mean_uncult = data_all_boxplot %>% 
+  filter(Uncultivated == "Uncultivated") %>% 
+  group_by(item) %>%
+  summarise(mean_uncult = mean(value)) 
+
+
+pvals %>% 
+  left_join(mean_cult,by = 'item') %>% 
+  left_join(mean_uncult,by = 'item') %>% 
+  print(n = 100)
+
+
 # 10% threshold for uncultivated 
 data_all_boxplot_10 = data %>% 
   mutate(Uncultivated = case_when(proportion_RS_genomes < 0.1 ~'Uncultivated',
