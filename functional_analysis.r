@@ -60,6 +60,54 @@ pcorr = ggplot(dp)+
 pcorr
 
 
+# cell motility genes
+kos  %>% 
+  filter(general == 'Cell motility') %>%
+  dplyr::select(ko,kp_desc) %>% 
+  unique() %>% 
+  group_by(kp_desc) %>% 
+  summarise(n = n())
+
+
+kos  %>% 
+  filter(general == 'Cell motility') %>%
+  mutate(sig = case_when(p_value_fdr < 0.05 ~ "sig",
+                         .default = 'non-sig')) %>% 
+  unique() %>% 
+  mutate(enriched = case_when(mean_uncultivated > mean_cultivated~"Uncultivated",
+                              .default = 'Cultivated')) %>% 
+  group_by(enriched,kp_desc,sig) %>% 
+  summarise(n = n())
+
+
+# Amino acid metabolism                     
+kos  %>% 
+  filter(general == 'Amino acid metabolism') %>%
+  mutate(sig = case_when(p_value_fdr < 0.05 ~ "sig",
+                         .default = 'non-sig')) %>% 
+  unique() %>% 
+  mutate(enriched = case_when(mean_uncultivated > mean_cultivated~"Uncultivated",
+                              .default = 'Cultivated')) %>% 
+  group_by(enriched,sig) %>% 
+  summarise(n = n())
+
+
+
+#"Valine, leucine and isoleucine biosynthesis "
+kos  %>% 
+  filter(kp_desc == "Valine, leucine and isoleucine biosynthesis ") %>%
+  mutate(sig = case_when(p_value_fdr < 0.05 ~ "sig",
+                         .default = 'non-sig')) %>% 
+  unique() %>% 
+  mutate(enriched = case_when(mean_uncultivated > mean_cultivated~"Uncultivated",
+                              .default = 'Cultivated')) %>% 
+  group_by(enriched,kp_desc,sig) %>% 
+  summarise(n = n())
+
+
+
+
+
 #########
 ####
 # tsne plot 
