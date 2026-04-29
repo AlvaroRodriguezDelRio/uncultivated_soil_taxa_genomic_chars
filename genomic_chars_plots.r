@@ -28,8 +28,8 @@ d_cor = data %>%
   dplyr::select(!c(Uncultivated,proportion_RS_genomes))
 
 
-c = cor(d_cor,use = "pairwise.complete.obs")
-pval <- psych::corr.test(d_cor, adjust="none")$p
+c = cor(d_cor,use = "pairwise.complete.obs",method = 'spearman')
+pval <- psych::corr.test(d_cor, adjust="none",method = 'spearman')$p
 
 corrplot(c, method = "circle", type = "upper",p.mat=pval,
          sig.level = 0.05,  insig = "blank",diag = F,
