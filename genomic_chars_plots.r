@@ -49,9 +49,9 @@ ggpairs(d_corr %>%
   theme_bw(base_size = 11) +
   theme(
     strip.background = element_rect(fill = "white"),
-    strip.text       = element_text(color = "black", face = "bold", size = 7),  # 👈 smaller font
-    strip.text.x     = element_text(angle = 30, hjust = 0.5),                   # 👈 angle top labels
-    strip.text.y     = element_text(angle = 0,  hjust = 0),                     # 👈 keep right labels horizontal
+    strip.text       = element_text(color = "black", face = "bold", size = 7),  
+    strip.text.x     = element_text(angle = 30, hjust = 0.5),                  
+    strip.text.y     = element_text(angle = 0,  hjust = 0),                    
     panel.grid.minor = element_blank()
   )
 
