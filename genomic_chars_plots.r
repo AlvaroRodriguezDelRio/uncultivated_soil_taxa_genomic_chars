@@ -1,4 +1,3 @@
-
 library(dplyr)
 library(data.table)
 library(stringr)
@@ -14,6 +13,8 @@ library(ggfortify)
 library(randomForest)
 library(caTools)
 library(corrplot)
+library(GGally)
+
 
 
 data = read.csv('supplementary_data.csv',
@@ -33,6 +34,22 @@ pval <- psych::corr.test(d_cor, adjust="none")$p
 corrplot(c, method = "circle", type = "upper",p.mat=pval,
          sig.level = 0.05,  insig = "blank",diag = F,
          order = 'hclust',tl.col = 'black')
+
+
+
+ggpairs(d_corr),
+        lower = list(continuous = wrap("blank")),       
+        upper = list(continuous = wrap("smooth", alpha = 0.4, size = 1.5)),
+        diag  = list(continuous = wrap("densityDiag", 
+                                       fill = "#4e9af1", alpha = 0.5))) +
+  theme_bw(base_size = 11) +
+  theme(
+    strip.background = element_rect(fill = "white"),
+    strip.text       = element_text(color = "black", face = "bold", size = 7), 
+    strip.text.x     = element_text(angle = 30, hjust = 0.5),                   
+    strip.text.y     = element_text(angle = 0,  hjust = 0),                    
+    panel.grid.minor = element_blank()
+  )
 
 
 ####
