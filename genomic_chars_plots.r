@@ -17,7 +17,7 @@ library(GGally)
 
 
 
-data = read.csv('supplementary_data.csv',
+data = read.csv('Figures/supplementary_data.csv',
                 header = T,check.names = FALSE)
 
 ######
@@ -37,20 +37,97 @@ corrplot(c, method = "circle", type = "upper",p.mat=pval,
 
 
 
-ggpairs(d_corr),
-        lower = list(continuous = wrap("blank")),       
+d_corr = data
+d_corr[d_corr[, 5] > 40, 5] <- NA
+ggpairs(d_corr %>% 
+          dplyr::select(!c(Uncultivated,proportion_RS_genomes,
+                           `oxygen tolerance`,`proportion free living`)),
+        lower = list(continuous = wrap("blank")),          # 👈 hide upper triangle
         upper = list(continuous = wrap("smooth", alpha = 0.4, size = 1.5)),
         diag  = list(continuous = wrap("densityDiag", 
                                        fill = "#4e9af1", alpha = 0.5))) +
   theme_bw(base_size = 11) +
   theme(
     strip.background = element_rect(fill = "white"),
-    strip.text       = element_text(color = "black", face = "bold", size = 7), 
-    strip.text.x     = element_text(angle = 30, hjust = 0.5),                   
-    strip.text.y     = element_text(angle = 0,  hjust = 0),                    
+    strip.text       = element_text(color = "black", face = "bold", size = 7),  # 👈 smaller font
+    strip.text.x     = element_text(angle = 30, hjust = 0.5),                   # 👈 angle top labels
+    strip.text.y     = element_text(angle = 0,  hjust = 0),                     # 👈 keep right labels horizontal
     panel.grid.minor = element_blank()
   )
 
+
+###########
+# see differences between cultivated and uncultivated for 
+# almost bimodal variables (prop. free living, oxygen tollerance)
+###########
+
+
+sig = data %>% 
+  select(!c(Uncultivated,proportion_RS_genomes)) %>% 
+  gather(key = 'item',value = 'value',-c(`oxygen tolerance`,`proportion free living`)) %>% 
+  mutate(`oxygen tolerance` = case_when(`oxygen tolerance` > 0.5~1,
+                                        .default = 0),
+         `proportion free living` = case_when(`proportion free living` > 0.5~1,
+                                              .default = 0)) %>% 
+  mutate(`proportion free living` = case_when(`proportion free living` == 0~'No',
+                                              .default = 'Yes'),
+         `oxygen tolerance` = case_when(`oxygen tolerance` == 0~'No',
+                                        .default = 'Yes')) %>% 
+  filter(!(item == "doubling time" & value > 40)) %>% 
+  filter(!(item == "biosynthetic clusters" & value > 20)) %>% 
+  filter(!(item == "salinity optimum" & value > 5)) 
+
+
+box1 = ggplot(sig,
+              aes(x = as.factor(`proportion free living`),
+                  y = value))+
+  geom_boxplot(outliers = F)+
+  coord_flip()+
+  facet_wrap(~item,scales = 'free_x')+
+  ggtitle('Free living')+
+  stat_compare_means(aes(group=`proportion free living`),label = "p.signif", method = "wilcox.test",
+                     ref.group = "Yes",hide.ns = TRUE, tip.length = 0,paired = F)+
+  geom_jitter(position = position_jitter(0.2),alpha = 0.02)+
+  theme_classic()+
+  xlab('Free living')
+
+
+box1
+
+
+box2 = ggplot(sig,
+              aes(x = as.factor(`oxygen tolerance`),
+                  y = value))+
+  geom_boxplot(outliers = F)+
+  coord_flip()+
+  facet_wrap(~item,scales = 'free_x')+
+  ggtitle('Oxygen tolerance')+
+  stat_compare_means(aes(group=`oxygen tolerance`),label = "p.signif", method = "wilcox.test",
+                     ref.group = "Yes",hide.ns = TRUE, tip.length = 0,paired = F)+
+  geom_jitter(position = position_jitter(0.2),alpha = 0.02)+
+  theme_classic()+
+  xlab("Oxygen tolerant")
+
+
+
+box1 / box2
+
+
+# wilcox test for oxygen // free living and the rest
+data %>% 
+  select(!Uncultivated,proportion_RS_genomes) %>% 
+  gather(key = 'item',value = 'value',-c(`oxygen tolerance`,`proportion free living`)) %>% 
+  mutate(`oxygen tolerance` = case_when(`oxygen tolerance` > 0.5~1,
+                                        .default = 0),
+         `proportion free living` = case_when(`proportion free living` > 0.5~1,
+                                              .default = 0)) %>% 
+  mutate(`proportion free living` = case_when(`proportion free living` == 0~'No',
+                                              .default = 'Yes'),
+         `oxygen tolerance` = case_when(`oxygen tolerance` == 0~'No',
+                                        .default = 'Yes')) %>% 
+  group_by(item) %>% 
+  summarise(p_ox = wilcox.test(value~`oxygen tolerance`)$p.value,
+            p_fl = wilcox.test(value~`proportion free living`)$p.value)
 
 ####
 # see difference between completely uncultivated and the rest
@@ -66,7 +143,9 @@ data_all_boxplot = data %>%
   filter(!(item == "salinity optimum" & value > 5)) 
 
 
-p_box = ggplot(data_all_boxplot,
+p_box = ggplot(data_all_boxplot %>% 
+                 filter(!item %in% c('oxygen tolerance',
+                                     'proportion free living')),
                aes(x = Uncultivated,y = value,
                    fill = Uncultivated))+
   geom_boxplot(outliers = F,alpha = 0.7)+
@@ -126,6 +205,30 @@ pvals %>%
   print(n = 100)
 
 
+###
+# chi-square test for almost bimodal variables (oxygen / free living)
+# vs uncultivated
+###
+
+data_all_boxplot %>%
+  filter(!is.na(value)) %>%
+  filter(item %in% c('oxygen tolerance', 'proportion free living')) %>%
+  group_by(item) %>%
+  reframe(
+    p_value = chisq.test(table(value, Uncultivated))$p.value
+  )
+
+
+# get proportion free living/ oxygen for cultivated and uncultivated
+data %>%
+  dplyr::select(`oxygen tolerance`, `proportion free living`,Uncultivated) %>% 
+  group_by(Uncultivated) %>%
+  summarise(
+    prop_oxygen    = mean(`oxygen tolerance` > 0),
+    prop_freeliving = mean(`proportion free living` > 0)
+  )
+
+
 # 10% threshold for uncultivated 
 data_all_boxplot_10 = data %>% 
   mutate(Uncultivated = case_when(proportion_RS_genomes < 0.1 ~'Uncultivated',
@@ -139,8 +242,8 @@ data_all_boxplot_10 = data %>%
 
 
 p_box_10 = ggplot(data_all_boxplot_10,
-               aes(x = Uncultivated,y = value,
-                   fill = Uncultivated))+
+                  aes(x = Uncultivated,y = value,
+                      fill = Uncultivated))+
   geom_boxplot(outliers = F,alpha = 0.7)+
   facet_wrap(~item,scales = 'free_x',ncol = 2)+
   theme_classic()+
@@ -168,7 +271,9 @@ p_box_10
 
 
 # violin plot 
-ggplot(data_all_boxplot,
+ggplot(data_all_boxplot %>% 
+         filter(!item %in% c('oxygen tolerance',
+                             'proportion free living')),
        aes(x = Uncultivated,y = value,
            fill = Uncultivated))+
   geom_violin(outliers = F,alpha = 0.7)+
@@ -192,7 +297,6 @@ ggplot(data_all_boxplot,
     strip.text = element_text(size = 16)
   )+
   xlab('')
-
 
 ###
 # distribution proportion uncultivated per genus
@@ -325,4 +429,3 @@ AAAAB
 
 p_box_10 + p_ml_10 + plot_layout(design = layout)+
   plot_annotation(tag_levels = 'A')
-
