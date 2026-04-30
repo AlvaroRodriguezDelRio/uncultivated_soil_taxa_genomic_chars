@@ -18,7 +18,7 @@ library(pROC)
 
 
 
-data = read.csv('Figures/supplementary_data.csv',
+data = read.csv('supplementary_data.csv',
                 header = T,check.names = FALSE)
 
 ######
