@@ -14,6 +14,7 @@ library(randomForest)
 library(caTools)
 library(corrplot)
 library(GGally)
+library(pROC)
 
 
 
@@ -361,6 +362,13 @@ p_ml = ggplot(imp)+
   )
 
 p_ml
+
+# AUC
+oob_probs <- rf_model$votes[, 2]
+roc_obj <- roc(data_ml$uncultivated, oob_probs)
+auc_value <- auc(roc_obj)
+auc_value
+
 
 #########
 # ML, most important variables for prediction, 10% threshold
